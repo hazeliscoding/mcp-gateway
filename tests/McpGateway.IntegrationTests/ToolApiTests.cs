@@ -23,7 +23,7 @@ public sealed class ToolApiTests : IAsyncLifetime
         _client = _factory.CreateClient();
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public Task InitializeAsync() => GatewayApiFactory.AuthenticateAsync(_client);
 
     public async Task DisposeAsync()
     {
