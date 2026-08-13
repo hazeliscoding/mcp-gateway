@@ -22,6 +22,9 @@ services:
         condition: service_healthy
     environment:
       ConnectionStrings__McpGateway: Host=postgres;Port=5432;Database=mcp_gateway;Username=postgres;Password=postgres
+      Auth__SigningKey: local-development-signing-key-change-me-32b!
+      Auth__Bootstrap__ClientId: gateway_admin
+      Auth__Bootstrap__ClientSecret: local-dev-bootstrap-secret
     ports:
       - "8080:8080"
 
