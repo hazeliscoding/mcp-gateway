@@ -186,8 +186,12 @@ public sealed class ToolRegistryService(
             approvalRequired,
             scopes,
             timeoutSeconds,
-            inputSchema.GetRawText(),
-            outputSchema.GetRawText());
+            RawJsonOrEmpty(inputSchema),
+            RawJsonOrEmpty(outputSchema));
+
+    /// <summary>An absent body property binds as Undefined; map it to a value the domain rejects as invalid JSON.</summary>
+    private static string RawJsonOrEmpty(JsonElement element) =>
+        element.ValueKind == JsonValueKind.Undefined ? string.Empty : element.GetRawText();
 
     private static ToolDetailResponse ToDetail(ToolDefinition tool) =>
         new(
