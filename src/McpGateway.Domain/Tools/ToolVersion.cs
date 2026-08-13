@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace McpGateway.Domain.Tools;
 
@@ -8,15 +7,11 @@ namespace McpGateway.Domain.Tools;
 /// risk metadata, and lifecycle status. Created only through
 /// <see cref="ToolDefinition"/> so version invariants hold per tool.
 /// </summary>
-public sealed partial class ToolVersion
+public sealed class ToolVersion
 {
     private const int MaxDescriptionLength = 500;
     private const int MinTimeoutSeconds = 1;
     private const int MaxTimeoutSeconds = 300;
-
-    /// <summary>Dot-separated lowercase segments, e.g. <c>queue.read</c>.</summary>
-    [GeneratedRegex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$")]
-    private static partial Regex ScopePattern();
 
     public ToolVersionNumber Number { get; private set; } = null!;
     public string Description { get; private set; } = null!;
@@ -49,7 +44,7 @@ public sealed partial class ToolVersion
             throw new DomainRuleException($"Timeout must be between {MinTimeoutSeconds} and {MaxTimeoutSeconds} seconds.");
         }
 
-        var scopes = ValidateScopes(spec.RequiredScopes);
+        var scopes = Scope.CreateManyNormalized(spec.RequiredScopes);
         EnsureJsonObject(spec.InputSchemaJson, "inputSchema");
         EnsureJsonObject(spec.OutputSchemaJson, "outputSchema");
 
@@ -70,28 +65,6 @@ public sealed partial class ToolVersion
 
     /// <summary>Idempotent: deprecating an already-deprecated version is a no-op.</summary>
     internal void Deprecate() => Status = ToolVersionStatus.Deprecated;
-
-    private static List<string> ValidateScopes(IReadOnlyList<string> scopes)
-    {
-        if (scopes is null || scopes.Count == 0)
-        {
-            throw new DomainRuleException("At least one required scope must be specified.");
-        }
-
-        var normalized = scopes.Select(s => s?.Trim() ?? string.Empty).ToList();
-        var invalid = normalized.FirstOrDefault(s => !ScopePattern().IsMatch(s));
-        if (invalid is not null)
-        {
-            throw new DomainRuleException($"Scope '{invalid}' is invalid: expected lowercase dot-separated segments like 'queue.read'.");
-        }
-
-        if (normalized.Distinct().Count() != normalized.Count)
-        {
-            throw new DomainRuleException("Required scopes must not contain duplicates.");
-        }
-
-        return normalized;
-    }
 
     private static void EnsureJsonObject(string json, string fieldName)
     {
