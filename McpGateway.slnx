@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/McpGateway.Application/McpGateway.Application.csproj" />
+    <Project Path="src/McpGateway.Domain/McpGateway.Domain.csproj" />
+    <Project Path="src/McpGateway.Infrastructure/McpGateway.Infrastructure.csproj" />
+    <Project Path="src/McpGateway.WebApi/McpGateway.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/McpGateway.IntegrationTests/McpGateway.IntegrationTests.csproj" />
+    <Project Path="tests/McpGateway.UnitTests/McpGateway.UnitTests.csproj" />
+  </Folder>
+</Solution>
