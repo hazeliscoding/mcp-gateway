@@ -6,10 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("McpGateway")
-    ?? throw new InvalidOperationException("Connection string 'McpGateway' is not configured.");
-
-builder.Services.AddMcpGatewayInfrastructure(connectionString);
+builder.Services.AddMcpGatewayInfrastructure(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
