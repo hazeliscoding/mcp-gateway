@@ -39,7 +39,7 @@ public sealed class ToolDefinition
         return tool;
     }
 
-    /// <exception cref="DomainRuleException">
+    /// <exception cref="DomainConflictException">
     /// The new version is not strictly higher than the latest registered version
     /// (which also rejects duplicates).
     /// </exception>
@@ -47,7 +47,7 @@ public sealed class ToolDefinition
     {
         if (spec.Number <= LatestVersion.Number)
         {
-            throw new DomainRuleException(
+            throw new DomainConflictException(
                 $"Version {spec.Number} must be higher than the latest registered version {LatestVersion.Number}.");
         }
 

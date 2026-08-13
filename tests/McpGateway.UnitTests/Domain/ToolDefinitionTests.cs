@@ -36,7 +36,7 @@ public class ToolDefinitionTests
     {
         var tool = TestSpecs.RegisteredTool(version: "1.0");
 
-        Assert.Throws<DomainRuleException>(() => tool.AddVersion(TestSpecs.Valid(version: version), TestSpecs.Now));
+        Assert.Throws<DomainConflictException>(() => tool.AddVersion(TestSpecs.Valid(version: version), TestSpecs.Now));
     }
 
     [Fact]
