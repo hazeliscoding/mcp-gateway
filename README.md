@@ -25,7 +25,7 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 - [x] Phase 1 — Tool registry (registration, discovery, versioning, kill switch, deprecation)
 - [x] Phase 2 — Authentication (user/agent/service identities, OAuth2 client credentials, JWT bearer)
 - [x] Phase 3 — Authorization (deterministic ABAC engine: kill switch, version lifecycle, scope coverage)
-- [ ] Phase 4 — Risk classification
+- [x] Phase 4 — Risk classification (risk drives the outcome: automatic, requires approval, or prohibited)
 - [ ] Phase 5 — Audit trail
 - [ ] Phase 6 — Angular admin console
 - [ ] Phase 7 — Attack testing
@@ -65,7 +65,7 @@ Identities are managed at `/api/identities`; client secrets are generated server
 
 ### Authorization
 
-Before an action runs, ask the gateway whether it is allowed. A deterministic policy engine evaluates the kill switch, version lifecycle, and scope coverage, and returns a decision with machine-readable reasons. The caller's scopes come from its token — never from the request body — so a caller cannot widen its own grant:
+Before an action runs, ask the gateway whether it is allowed. A deterministic policy engine evaluates the kill switch, version lifecycle, scope coverage, and — once access is granted — the tool's risk class. The caller's scopes come from its token, never from the request body, so a caller cannot widen its own grant:
 
 ```bash
 curl -X POST http://localhost:8080/api/tools/redrive_dead_letter_queue/authorize \
@@ -74,19 +74,28 @@ curl -X POST http://localhost:8080/api/tools/redrive_dead_letter_queue/authorize
   -d '{ "action": "Invoke" }'
 ```
 
-The response is HTTP 200 for both permit and deny — evaluating is what succeeded:
+The response is HTTP 200 for every evaluation — a deny or an approval requirement is a successful evaluation, not an error. Branch on `outcome`:
 
 ```json
 {
+  "outcome": "RequiresApproval",
   "permit": false,
   "toolName": "redrive_dead_letter_queue",
   "version": "1.0.0",
   "action": "Invoke",
-  "reasons": [{ "code": "MissingScopes", "message": "Missing required scope(s): queue.redrive." }]
+  "reasons": [{ "code": "ApprovalRequired", "message": "Version 1.0.0 of 'redrive_dead_letter_queue' requires human approval before it can run." }]
 }
 ```
 
-Omit `version` to target the latest active version. This decision endpoint is the gate that tool execution will call through in later phases.
+Risk class drives the outcome for an invocation (discovery is never risk-gated):
+
+| Risk | Outcome |
+|------|---------|
+| `ReadOnly` / `Write` | `Permitted` (runs automatically once scopes are held) |
+| `Privileged` (or any version flagged `approvalRequired`) | `RequiresApproval` |
+| `Destructive` | `Prohibited` |
+
+Access rules run first: a missing scope, disabled tool, or deprecated version returns `Denied` before risk is ever considered. Omit `version` to target the latest active version. This decision endpoint is the gate that tool execution will call through in later phases; making `RequiresApproval` actionable (the approval workflow) is the next phase.
 
 Tests (integration tests spin up Postgres via Testcontainers — Docker required):
 
