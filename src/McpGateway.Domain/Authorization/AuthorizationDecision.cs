@@ -6,25 +6,37 @@ namespace McpGateway.Domain.Authorization;
 public sealed record AuthorizationReason(AuthorizationReasonCode Code, string Message);
 
 /// <summary>
-/// Result of evaluating an <see cref="AuthorizationRequest"/>. A permit carries a
-/// single <see cref="AuthorizationReasonCode.Permitted"/> reason; a deny carries
-/// the reasons it failed on. The decision is data — enforcement (returning 403,
-/// requiring approval, writing audit) is the caller's job in later phases.
+/// Result of evaluating an <see cref="AuthorizationRequest"/>: a classified
+/// <see cref="Outcome"/> plus the reasons behind it. The decision is data —
+/// enforcement (returning 403, opening an approval, writing audit) is the caller's
+/// job in later phases.
 /// </summary>
 public sealed record AuthorizationDecision
 {
-    public bool Permit { get; }
+    public AuthorizationOutcome Outcome { get; }
     public IReadOnlyList<AuthorizationReason> Reasons { get; }
 
-    private AuthorizationDecision(bool permit, IReadOnlyList<AuthorizationReason> reasons)
+    /// <summary>Convenience for callers that only care whether the action may run automatically.</summary>
+    public bool Permit => Outcome == AuthorizationOutcome.Permitted;
+
+    private AuthorizationDecision(AuthorizationOutcome outcome, IReadOnlyList<AuthorizationReason> reasons)
     {
-        Permit = permit;
+        Outcome = outcome;
         Reasons = reasons;
     }
 
     public static AuthorizationDecision Permitted() =>
-        new(true, [new AuthorizationReason(AuthorizationReasonCode.Permitted, "Authorized.")]);
+        new(AuthorizationOutcome.Permitted,
+            [new AuthorizationReason(AuthorizationReasonCode.Permitted, "Authorized.")]);
 
     public static AuthorizationDecision Denied(AuthorizationReasonCode code, string message) =>
-        new(false, [new AuthorizationReason(code, message)]);
+        new(AuthorizationOutcome.Denied, [new AuthorizationReason(code, message)]);
+
+    public static AuthorizationDecision RequiresApproval(string message) =>
+        new(AuthorizationOutcome.RequiresApproval,
+            [new AuthorizationReason(AuthorizationReasonCode.ApprovalRequired, message)]);
+
+    public static AuthorizationDecision Prohibited(string message) =>
+        new(AuthorizationOutcome.Prohibited,
+            [new AuthorizationReason(AuthorizationReasonCode.RiskProhibited, message)]);
 }

@@ -21,4 +21,10 @@ public enum AuthorizationReasonCode
 
     /// <summary>The principal is missing one or more required scopes.</summary>
     MissingScopes,
+
+    /// <summary>The action is otherwise allowed but its risk class demands human approval.</summary>
+    ApprovalRequired,
+
+    /// <summary>The tool's risk class is barred from execution through the gateway.</summary>
+    RiskProhibited,
 }

@@ -51,8 +51,40 @@ public static class AuthorizationPolicy
                 $"Missing required scope(s): {string.Join(", ", missing)}.");
         }
 
-        // Environment and Resource are carried on the request for audit and for
-        // future rules; Phase 3 adds no environment-specific denial.
+        // 5. Risk classification gates invocation once access is otherwise granted.
+        //    Discovery is never risk-gated — reading a tool's metadata is safe.
+        //    Environment and Resource are carried for audit and future rules; Phase 4
+        //    adds no environment-specific denial.
+        if (request.Action == ToolAction.Invoke)
+        {
+            return ClassifyRisk(request.ToolName, request.Version);
+        }
+
+        return AuthorizationDecision.Permitted();
+    }
+
+    /// <summary>
+    /// Maps the version's risk class to an outcome. ReadOnly and Write run
+    /// automatically (Write's "depending on scope" is already enforced by the
+    /// scope check above). Privileged — or any version explicitly flagged
+    /// <see cref="ToolVersion.ApprovalRequired"/> — needs human approval.
+    /// Destructive is prohibited outright: multi-party approval is the deferred
+    /// alternative, so the conservative default is a categorical block.
+    /// </summary>
+    private static AuthorizationDecision ClassifyRisk(ToolName toolName, ToolVersion version)
+    {
+        if (version.RiskLevel == RiskLevel.Destructive)
+        {
+            return AuthorizationDecision.Prohibited(
+                $"Version {version.Number} of '{toolName}' is destructive and cannot be invoked through the gateway.");
+        }
+
+        if (version.RiskLevel == RiskLevel.Privileged || version.ApprovalRequired)
+        {
+            return AuthorizationDecision.RequiresApproval(
+                $"Version {version.Number} of '{toolName}' requires human approval before it can run.");
+        }
+
         return AuthorizationDecision.Permitted();
     }
 
