@@ -68,6 +68,7 @@ app.MapOAuthEndpoints();
 app.MapIdentityEndpoints();
 app.MapToolEndpoints();
 app.MapAuthorizationEndpoints();
+app.MapApprovalEndpoints();
 
 app.Run();
 
