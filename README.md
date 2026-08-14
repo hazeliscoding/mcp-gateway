@@ -27,7 +27,7 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 - [x] Phase 3 — Authorization (deterministic ABAC engine: kill switch, version lifecycle, scope coverage)
 - [x] Phase 4 — Risk classification (risk drives the outcome: automatic, requires approval, or prohibited)
 - [x] Approval engine — request/approve/reject workflow with four-eyes that makes `RequiresApproval` actionable
-- [ ] Phase 5 — Audit trail
+- [x] Phase 5 — Audit trail (append-only record of every authorization and approval event, with hashed inputs and trace ids)
 - [ ] Phase 6 — Angular admin console
 - [ ] Phase 7 — Attack testing
 
@@ -117,6 +117,34 @@ curl -X POST http://localhost:8080/api/tools/redrive_dead_letter_queue/authorize
 ```
 
 Pending requests are listed at `GET /api/approvals?status=Pending`. An approval is a standing grant for that `(requester, tool, version)` until execution can consume it (a later phase); approving is refused for tools that run automatically or are prohibited.
+
+### Audit
+
+Every authorization decision and approval event is recorded to an append-only audit trail — including denials and blocked privileged attempts. Each entry captures who acted, the tool/version, the result, a trace id correlating it to the request, and a SHA-256 hash of the request context (sensitive values such as a resource ARN are hashed, never stored raw):
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/api/audit?toolName=redrive_dead_letter_queue&eventType=AuthorizationDecision"
+```
+
+```json
+[
+  {
+    "occurredAt": "2026-08-14T18:00:00+00:00",
+    "traceId": "0af7651916cd43dd8448eb211c80319c",
+    "eventType": "AuthorizationDecision",
+    "actorClientId": "incident_agent",
+    "result": "RequiresApproval",
+    "toolName": "redrive_dead_letter_queue",
+    "version": "1.0.0",
+    "detail": "ApprovalRequired",
+    "requestHash": "9f2c…",
+    "approvalId": null
+  }
+]
+```
+
+Filter by `toolName`, `actor`, `eventType`, and a `from`/`to` time window; results come back newest-first.
 
 Tests (integration tests spin up Postgres via Testcontainers — Docker required):
 
