@@ -1,4 +1,5 @@
 using McpGateway.Application.Approvals;
+using McpGateway.Application.Auditing;
 using McpGateway.Application.Tools;
 using McpGateway.Domain;
 using McpGateway.Domain.Approvals;
@@ -12,11 +13,13 @@ namespace McpGateway.Application.Authorization;
 /// Orchestrates an authorization decision: loads the target tool, resolves the
 /// requested version, checks for a standing approval grant, and hands the assembled
 /// attributes to the deterministic <see cref="AuthorizationPolicy"/>. It maps
-/// decisions to responses but makes none of the permit/deny rules itself.
+/// decisions to responses but makes none of the permit/deny rules itself, and
+/// records every evaluated decision to the audit trail.
 /// </summary>
 public sealed class AuthorizationService(
     IToolRegistryRepository repository,
     IApprovalRepository approvals,
+    IAuditTrail auditTrail,
     ILogger<AuthorizationService> logger)
 {
     private const string DefaultEnvironment = "production";
@@ -56,6 +59,7 @@ public sealed class AuthorizationService(
             && await approvals.ExistsAsync(
                 caller.ClientId, tool.Name, version.Number, ApprovalStatus.Approved, cancellationToken);
 
+        var environment = request.Environment?.Trim() is { Length: > 0 } env ? env : DefaultEnvironment;
         var decision = AuthorizationPolicy.Evaluate(new AuthorizationRequest(
             caller.ClientId,
             caller.Type,
@@ -64,7 +68,7 @@ public sealed class AuthorizationService(
             tool.Enabled,
             version,
             request.Action,
-            request.Environment?.Trim() is { Length: > 0 } env ? env : DefaultEnvironment,
+            environment,
             request.Resource,
             approvalGranted));
 
@@ -74,6 +78,12 @@ public sealed class AuthorizationService(
             decision.Outcome,
             caller.Type, caller.ClientId.Value, tool.Name.Value, reportedVersion ?? "unresolved",
             request.Action, string.Join(",", decision.Reasons.Select(r => r.Code)));
+
+        // Record the decision. The canonical input is hashed, not stored raw.
+        await auditTrail.RecordAuthorizationAsync(
+            caller, tool.Name, version?.Number, request.Action,
+            $"{tool.Name}|{reportedVersion ?? "-"}|{request.Action}|{environment}|{request.Resource ?? "-"}",
+            decision.Outcome, decision.Reasons.Select(r => r.Code).ToList(), cancellationToken);
 
         return OperationResult<AuthorizationDecisionResponse>.Success(new AuthorizationDecisionResponse(
             decision.Outcome,

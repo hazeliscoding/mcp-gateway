@@ -1,7 +1,9 @@
+using McpGateway.Application.Auditing;
 using McpGateway.Application.Authorization;
 using McpGateway.Application.Tools;
 using McpGateway.Domain;
 using McpGateway.Domain.Approvals;
+using McpGateway.Domain.Auditing;
 using McpGateway.Domain.Authorization;
 using McpGateway.Domain.Tools;
 using Microsoft.Extensions.Logging;
@@ -10,12 +12,14 @@ namespace McpGateway.Application.Approvals;
 
 /// <summary>
 /// Commands and queries for the approval workflow. Enforces that a request only
-/// exists for a version that actually needs approval, and delegates the four-eyes
-/// rule and status transitions to the <see cref="ApprovalRequest"/> aggregate.
+/// exists for a version that actually needs approval, delegates the four-eyes rule
+/// and status transitions to the <see cref="ApprovalRequest"/> aggregate, and records
+/// each lifecycle event to the audit trail.
 /// </summary>
 public sealed class ApprovalService(
     IApprovalRepository approvals,
     IToolRegistryRepository tools,
+    IAuditTrail auditTrail,
     TimeProvider timeProvider,
     ILogger<ApprovalService> logger)
 {
@@ -80,6 +84,8 @@ public sealed class ApprovalService(
         await approvals.AddAsync(approval, cancellationToken);
         await approvals.SaveChangesAsync(cancellationToken);
 
+        await auditTrail.RecordApprovalAsync(AuditEventType.ApprovalRequested, requester, approval, cancellationToken);
+
         logger.LogInformation(
             "Opened approval {ApprovalId} for {ClientId} on tool {ToolName} version {Version}",
             approval.Id, requester.ClientId.Value, name.Value, version.Number);
@@ -88,13 +94,13 @@ public sealed class ApprovalService(
 
     public Task<OperationResult<ApprovalResponse>> ApproveAsync(
         Guid id, CallerPrincipal approver, string? note, CancellationToken cancellationToken) =>
-        DecideAsync(id, approver, note, cancellationToken, (approval, utcNow) =>
-            approval.Approve(approver.ClientId, note, utcNow), "approved");
+        DecideAsync(id, approver, note, cancellationToken, AuditEventType.ApprovalApproved,
+            (approval, utcNow) => approval.Approve(approver.ClientId, note, utcNow), "approved");
 
     public Task<OperationResult<ApprovalResponse>> RejectAsync(
         Guid id, CallerPrincipal approver, string? note, CancellationToken cancellationToken) =>
-        DecideAsync(id, approver, note, cancellationToken, (approval, utcNow) =>
-            approval.Reject(approver.ClientId, note, utcNow), "rejected");
+        DecideAsync(id, approver, note, cancellationToken, AuditEventType.ApprovalRejected,
+            (approval, utcNow) => approval.Reject(approver.ClientId, note, utcNow), "rejected");
 
     public async Task<OperationResult<ApprovalResponse>> GetAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -114,7 +120,7 @@ public sealed class ApprovalService(
 
     private async Task<OperationResult<ApprovalResponse>> DecideAsync(
         Guid id, CallerPrincipal approver, string? note, CancellationToken cancellationToken,
-        Action<ApprovalRequest, DateTimeOffset> decide, string decisionVerb)
+        AuditEventType eventType, Action<ApprovalRequest, DateTimeOffset> decide, string decisionVerb)
     {
         var approval = await approvals.GetByIdAsync(id, cancellationToken);
         if (approval is null)
@@ -136,6 +142,7 @@ public sealed class ApprovalService(
         }
 
         await approvals.SaveChangesAsync(cancellationToken);
+        await auditTrail.RecordApprovalAsync(eventType, approver, approval, cancellationToken);
 
         logger.LogInformation(
             "Approval {ApprovalId} {Decision} by {ClientId}", approval.Id, decisionVerb, approver.ClientId.Value);

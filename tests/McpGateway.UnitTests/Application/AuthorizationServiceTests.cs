@@ -14,11 +14,25 @@ public class AuthorizationServiceTests
 
     private readonly FakeToolRegistryRepository _repository = new();
     private readonly FakeApprovalRepository _approvals = new();
+    private readonly FakeAuditTrail _audit = new();
     private readonly AuthorizationService _service;
 
     public AuthorizationServiceTests()
     {
-        _service = new AuthorizationService(_repository, _approvals, NullLogger<AuthorizationService>.Instance);
+        _service = new AuthorizationService(
+            _repository, _approvals, _audit, NullLogger<AuthorizationService>.Instance);
+    }
+
+    [Fact]
+    public async Task Every_decision_is_recorded_to_the_audit_trail()
+    {
+        await SeedTool("get_queue_metrics", "1.0", RiskLevel.ReadOnly, ["queue.read"]);
+
+        await Authorize("get_queue_metrics", caller: Caller("queue.read"));
+
+        var recorded = Assert.Single(_audit.Authorizations);
+        Assert.Equal(AuthorizationOutcome.Permitted, recorded.Outcome);
+        Assert.Equal("get_queue_metrics", recorded.ToolName);
     }
 
     [Fact]

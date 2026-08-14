@@ -2,6 +2,7 @@ using McpGateway.Application;
 using McpGateway.Application.Approvals;
 using McpGateway.Application.Authorization;
 using McpGateway.Domain.Approvals;
+using McpGateway.Domain.Auditing;
 using McpGateway.Domain.Identities;
 using McpGateway.Domain.Tools;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -14,12 +15,13 @@ public class ApprovalServiceTests
 
     private readonly FakeApprovalRepository _approvals = new();
     private readonly FakeToolRegistryRepository _tools = new();
+    private readonly FakeAuditTrail _audit = new();
     private readonly ApprovalService _service;
 
     public ApprovalServiceTests()
     {
         _service = new ApprovalService(
-            _approvals, _tools, new FixedTimeProvider(Now), NullLogger<ApprovalService>.Instance);
+            _approvals, _tools, _audit, new FixedTimeProvider(Now), NullLogger<ApprovalService>.Instance);
     }
 
     [Fact]
@@ -92,6 +94,18 @@ public class ApprovalServiceTests
         Assert.True(result.IsSuccess);
         Assert.Equal(ApprovalStatus.Approved, result.Value!.Status);
         Assert.Equal("ops_admin", result.Value.DecidedBy);
+    }
+
+    [Fact]
+    public async Task Lifecycle_events_are_recorded_to_the_audit_trail()
+    {
+        var id = await OpenApproval();
+
+        await _service.ApproveAsync(id, Approver(), null, CancellationToken.None);
+
+        Assert.Equal(
+            [AuditEventType.ApprovalRequested, AuditEventType.ApprovalApproved],
+            _audit.Approvals.Select(a => a.EventType).ToArray());
     }
 
     [Fact]
