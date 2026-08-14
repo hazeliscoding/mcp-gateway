@@ -1,7 +1,9 @@
 using McpGateway.Application.Approvals;
+using McpGateway.Application.Auditing;
 using McpGateway.Application.Authorization;
 using McpGateway.Application.Identities;
 using McpGateway.Application.Tools;
+using McpGateway.Infrastructure.Observability;
 using McpGateway.Infrastructure.Persistence;
 using McpGateway.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +30,12 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IApprovalRepository, ApprovalRepository>();
         services.AddScoped<ApprovalService>();
+
+        services.AddScoped<IAuditRepository, AuditRepository>();
+        services.AddScoped<AuditService>();
+        services.AddScoped<IAuditTrail>(sp => sp.GetRequiredService<AuditService>());
+        services.AddSingleton<ITraceContext, ActivityTraceContext>();
+        services.AddSingleton<IPayloadHasher, Sha256PayloadHasher>();
 
         services.AddScoped<IIdentityRepository, IdentityRepository>();
         services.AddSingleton<ISecretHasher, Pbkdf2SecretHasher>();
