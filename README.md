@@ -26,6 +26,7 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 - [x] Phase 2 — Authentication (user/agent/service identities, OAuth2 client credentials, JWT bearer)
 - [x] Phase 3 — Authorization (deterministic ABAC engine: kill switch, version lifecycle, scope coverage)
 - [x] Phase 4 — Risk classification (risk drives the outcome: automatic, requires approval, or prohibited)
+- [x] Approval engine — request/approve/reject workflow with four-eyes that makes `RequiresApproval` actionable
 - [ ] Phase 5 — Audit trail
 - [ ] Phase 6 — Angular admin console
 - [ ] Phase 7 — Attack testing
@@ -95,7 +96,27 @@ Risk class drives the outcome for an invocation (discovery is never risk-gated):
 | `Privileged` (or any version flagged `approvalRequired`) | `RequiresApproval` |
 | `Destructive` | `Prohibited` |
 
-Access rules run first: a missing scope, disabled tool, or deprecated version returns `Denied` before risk is ever considered. Omit `version` to target the latest active version. This decision endpoint is the gate that tool execution will call through in later phases; making `RequiresApproval` actionable (the approval workflow) is the next phase.
+Access rules run first: a missing scope, disabled tool, or deprecated version returns `Denied` before risk is ever considered. Omit `version` to target the latest active version. This decision endpoint is the gate that tool execution will call through in later phases.
+
+### Approvals
+
+A `RequiresApproval` outcome is made actionable by the approval workflow. The requester opens a request; a **different** principal approves it (four-eyes is enforced — an approver can never be the requester); the original caller then re-authorizes and is permitted:
+
+```bash
+# 1. Agent opens an approval request (requester is taken from the token)
+APPROVAL=$(curl -s -X POST http://localhost:8080/api/tools/redrive_dead_letter_queue/approvals \
+  -H "Authorization: Bearer $AGENT_TOKEN" -H "Content-Type: application/json" -d '{}' | jq -r .id)
+
+# 2. An operator approves it (must be a different identity)
+curl -X POST http://localhost:8080/api/approvals/$APPROVAL/approve \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" -d '{ "note": "reviewed" }'
+
+# 3. The agent re-authorizes — now Permitted
+curl -X POST http://localhost:8080/api/tools/redrive_dead_letter_queue/authorize \
+  -H "Authorization: Bearer $AGENT_TOKEN" -H "Content-Type: application/json" -d '{}'
+```
+
+Pending requests are listed at `GET /api/approvals?status=Pending`. An approval is a standing grant for that `(requester, tool, version)` until execution can consume it (a later phase); approving is refused for tools that run automatically or are prohibited.
 
 Tests (integration tests spin up Postgres via Testcontainers — Docker required):
 
