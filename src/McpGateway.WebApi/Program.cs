@@ -67,6 +67,7 @@ using (var scope = app.Services.CreateScope())
 app.MapOAuthEndpoints();
 app.MapIdentityEndpoints();
 app.MapToolEndpoints();
+app.MapAuthorizationEndpoints();
 
 app.Run();
 
