@@ -1,5 +1,7 @@
+using McpGateway.Application.Approvals;
 using McpGateway.Application.Tools;
 using McpGateway.Domain;
+using McpGateway.Domain.Approvals;
 using McpGateway.Domain.Authorization;
 using McpGateway.Domain.Tools;
 using Microsoft.Extensions.Logging;
@@ -8,12 +10,13 @@ namespace McpGateway.Application.Authorization;
 
 /// <summary>
 /// Orchestrates an authorization decision: loads the target tool, resolves the
-/// requested version, and hands the assembled attributes to the deterministic
-/// <see cref="AuthorizationPolicy"/>. It maps decisions to responses but makes
-/// none of the permit/deny rules itself.
+/// requested version, checks for a standing approval grant, and hands the assembled
+/// attributes to the deterministic <see cref="AuthorizationPolicy"/>. It maps
+/// decisions to responses but makes none of the permit/deny rules itself.
 /// </summary>
 public sealed class AuthorizationService(
     IToolRegistryRepository repository,
+    IApprovalRepository approvals,
     ILogger<AuthorizationService> logger)
 {
     private const string DefaultEnvironment = "production";
@@ -47,6 +50,12 @@ public sealed class AuthorizationService(
 
         var version = ResolveVersion(tool, requestedVersion);
 
+        // A standing approval for this exact (caller, tool, version) upgrades an
+        // approval-gated outcome to Permitted.
+        var approvalGranted = version is not null
+            && await approvals.ExistsAsync(
+                caller.ClientId, tool.Name, version.Number, ApprovalStatus.Approved, cancellationToken);
+
         var decision = AuthorizationPolicy.Evaluate(new AuthorizationRequest(
             caller.ClientId,
             caller.Type,
@@ -56,7 +65,8 @@ public sealed class AuthorizationService(
             version,
             request.Action,
             request.Environment?.Trim() is { Length: > 0 } env ? env : DefaultEnvironment,
-            request.Resource));
+            request.Resource,
+            approvalGranted));
 
         var reportedVersion = version?.Number.ToString() ?? requestedVersion?.ToString();
         logger.LogInformation(

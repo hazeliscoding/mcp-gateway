@@ -1,5 +1,6 @@
 using McpGateway.Application;
 using McpGateway.Application.Authorization;
+using McpGateway.Domain.Approvals;
 using McpGateway.Domain.Authorization;
 using McpGateway.Domain.Identities;
 using McpGateway.Domain.Tools;
@@ -12,11 +13,12 @@ public class AuthorizationServiceTests
     private static readonly DateTimeOffset Now = new(2026, 8, 13, 12, 0, 0, TimeSpan.Zero);
 
     private readonly FakeToolRegistryRepository _repository = new();
+    private readonly FakeApprovalRepository _approvals = new();
     private readonly AuthorizationService _service;
 
     public AuthorizationServiceTests()
     {
-        _service = new AuthorizationService(_repository, NullLogger<AuthorizationService>.Instance);
+        _service = new AuthorizationService(_repository, _approvals, NullLogger<AuthorizationService>.Instance);
     }
 
     [Fact]
@@ -56,6 +58,29 @@ public class AuthorizationServiceTests
         Assert.Equal(AuthorizationOutcome.RequiresApproval, result.Value!.Outcome);
         Assert.False(result.Value.Permit);
         Assert.Equal(AuthorizationReasonCode.ApprovalRequired, Assert.Single(result.Value.Reasons).Code);
+    }
+
+    [Fact]
+    public async Task Privileged_tool_is_permitted_once_an_approval_grant_exists()
+    {
+        await SeedTool("redrive_dead_letter_queue", "1.0", RiskLevel.Privileged, ["queue.redrive"]);
+        await SeedApprovedGrant("incident_agent", "redrive_dead_letter_queue", "1.0.0");
+
+        var result = await Authorize("redrive_dead_letter_queue", caller: Caller("queue.redrive"));
+
+        Assert.Equal(AuthorizationOutcome.Permitted, result.Value!.Outcome);
+        Assert.True(result.Value.Permit);
+    }
+
+    [Fact]
+    public async Task Approval_grant_for_a_different_caller_does_not_permit()
+    {
+        await SeedTool("redrive_dead_letter_queue", "1.0", RiskLevel.Privileged, ["queue.redrive"]);
+        await SeedApprovedGrant("other_agent", "redrive_dead_letter_queue", "1.0.0");
+
+        var result = await Authorize("redrive_dead_letter_queue", caller: Caller("queue.redrive"));
+
+        Assert.Equal(AuthorizationOutcome.RequiresApproval, result.Value!.Outcome);
     }
 
     [Fact]
@@ -138,6 +163,15 @@ public class AuthorizationServiceTests
     {
         var tool = ToolDefinition.Register(ToolName.Create(name), Spec(version, riskLevel, scopes), Now);
         await _repository.AddAsync(tool, CancellationToken.None);
+    }
+
+    private async Task SeedApprovedGrant(string requester, string tool, string version)
+    {
+        var approval = ApprovalRequest.Open(
+            Guid.NewGuid(), ToolName.Create(tool), ToolVersionNumber.Create(version),
+            ClientId.Create(requester), RiskLevel.Privileged, ToolAction.Invoke, "production", null, Now);
+        approval.Approve(ClientId.Create("ops_admin"), null, Now);
+        await _approvals.AddAsync(approval, CancellationToken.None);
     }
 
     private static ToolVersionSpec Spec(string version, RiskLevel riskLevel, params string[] scopes) =>
