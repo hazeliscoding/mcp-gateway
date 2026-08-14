@@ -21,6 +21,10 @@ namespace McpGateway.Domain.Authorization;
 /// <param name="Action">What the caller wants to do.</param>
 /// <param name="Environment">Deployment environment the call targets (e.g. <c>production</c>).</param>
 /// <param name="Resource">Optional resource identifier the action would touch.</param>
+/// <param name="ApprovalGranted">
+/// Whether a human has already approved this caller for this tool version. Upgrades
+/// an approval-gated outcome to <see cref="AuthorizationOutcome.Permitted"/>.
+/// </param>
 public sealed record AuthorizationRequest(
     ClientId CallerId,
     IdentityType CallerType,
@@ -30,4 +34,5 @@ public sealed record AuthorizationRequest(
     ToolVersion? Version,
     ToolAction Action,
     string Environment,
-    string? Resource);
+    string? Resource,
+    bool ApprovalGranted = false);

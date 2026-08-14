@@ -57,36 +57,28 @@ public static class AuthorizationPolicy
         //    adds no environment-specific denial.
         if (request.Action == ToolAction.Invoke)
         {
-            return ClassifyRisk(request.ToolName, request.Version);
+            return ClassifyRisk(request.ToolName, request.Version, request.ApprovalGranted);
         }
 
         return AuthorizationDecision.Permitted();
     }
 
     /// <summary>
-    /// Maps the version's risk class to an outcome. ReadOnly and Write run
-    /// automatically (Write's "depending on scope" is already enforced by the
-    /// scope check above). Privileged — or any version explicitly flagged
-    /// <see cref="ToolVersion.ApprovalRequired"/> — needs human approval.
-    /// Destructive is prohibited outright: multi-party approval is the deferred
-    /// alternative, so the conservative default is a categorical block.
+    /// Turns the version's <see cref="RiskPolicy"/> disposition into an outcome. An
+    /// approval-gated invocation is permitted once a human has approved this caller
+    /// for this version (<paramref name="approvalGranted"/>); until then it reports
+    /// <see cref="AuthorizationOutcome.RequiresApproval"/>. Destructive is prohibited
+    /// outright — multi-party approval is the deferred alternative.
     /// </summary>
-    private static AuthorizationDecision ClassifyRisk(ToolName toolName, ToolVersion version)
-    {
-        if (version.RiskLevel == RiskLevel.Destructive)
+    private static AuthorizationDecision ClassifyRisk(ToolName toolName, ToolVersion version, bool approvalGranted) =>
+        RiskPolicy.Classify(version.RiskLevel, version.ApprovalRequired) switch
         {
-            return AuthorizationDecision.Prohibited(
-                $"Version {version.Number} of '{toolName}' is destructive and cannot be invoked through the gateway.");
-        }
-
-        if (version.RiskLevel == RiskLevel.Privileged || version.ApprovalRequired)
-        {
-            return AuthorizationDecision.RequiresApproval(
-                $"Version {version.Number} of '{toolName}' requires human approval before it can run.");
-        }
-
-        return AuthorizationDecision.Permitted();
-    }
+            RiskDisposition.Prohibited => AuthorizationDecision.Prohibited(
+                $"Version {version.Number} of '{toolName}' is destructive and cannot be invoked through the gateway."),
+            RiskDisposition.RequiresApproval when !approvalGranted => AuthorizationDecision.RequiresApproval(
+                $"Version {version.Number} of '{toolName}' requires human approval before it can run."),
+            _ => AuthorizationDecision.Permitted(),
+        };
 
     private static IReadOnlyList<string> MissingScopes(
         IReadOnlyList<string> required, IReadOnlyList<string> granted)
