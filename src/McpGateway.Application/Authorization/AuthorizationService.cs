@@ -61,11 +61,12 @@ public sealed class AuthorizationService(
         var reportedVersion = version?.Number.ToString() ?? requestedVersion?.ToString();
         logger.LogInformation(
             "Authorization {Outcome} for {IdentityType} {ClientId} on tool {ToolName} version {Version} action {Action}: {ReasonCodes}",
-            decision.Permit ? "permitted" : "denied",
+            decision.Outcome,
             caller.Type, caller.ClientId.Value, tool.Name.Value, reportedVersion ?? "unresolved",
             request.Action, string.Join(",", decision.Reasons.Select(r => r.Code)));
 
         return OperationResult<AuthorizationDecisionResponse>.Success(new AuthorizationDecisionResponse(
+            decision.Outcome,
             decision.Permit,
             tool.Name.Value,
             reportedVersion,

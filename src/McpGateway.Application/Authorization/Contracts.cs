@@ -21,12 +21,14 @@ public sealed record AuthorizeToolRequest(
 public sealed record ReasonResponse(AuthorizationReasonCode Code, string Message);
 
 /// <summary>The evaluated decision returned to the caller.</summary>
-/// <param name="Permit">Whether the action is authorized.</param>
+/// <param name="Outcome">Classified result: permitted, requires approval, denied, or prohibited.</param>
+/// <param name="Permit">Convenience flag; true only when <paramref name="Outcome"/> is Permitted.</param>
 /// <param name="ToolName">Tool the decision concerns.</param>
 /// <param name="Version">Resolved version, or the requested version when it could not be resolved.</param>
 /// <param name="Action">Action that was evaluated.</param>
 /// <param name="Reasons">Why the decision came out the way it did.</param>
 public sealed record AuthorizationDecisionResponse(
+    AuthorizationOutcome Outcome,
     bool Permit,
     string ToolName,
     string? Version,
