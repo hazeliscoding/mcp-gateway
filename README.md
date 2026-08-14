@@ -24,7 +24,7 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 
 - [x] Phase 1 — Tool registry (registration, discovery, versioning, kill switch, deprecation)
 - [x] Phase 2 — Authentication (user/agent/service identities, OAuth2 client credentials, JWT bearer)
-- [ ] Phase 3 — Authorization
+- [x] Phase 3 — Authorization (deterministic ABAC engine: kill switch, version lifecycle, scope coverage)
 - [ ] Phase 4 — Risk classification
 - [ ] Phase 5 — Audit trail
 - [ ] Phase 6 — Angular admin console
@@ -62,6 +62,31 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/tools
 ```
 
 Identities are managed at `/api/identities`; client secrets are generated server-side, returned exactly once, and stored only as PBKDF2 hashes.
+
+### Authorization
+
+Before an action runs, ask the gateway whether it is allowed. A deterministic policy engine evaluates the kill switch, version lifecycle, and scope coverage, and returns a decision with machine-readable reasons. The caller's scopes come from its token — never from the request body — so a caller cannot widen its own grant:
+
+```bash
+curl -X POST http://localhost:8080/api/tools/redrive_dead_letter_queue/authorize \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "action": "Invoke" }'
+```
+
+The response is HTTP 200 for both permit and deny — evaluating is what succeeded:
+
+```json
+{
+  "permit": false,
+  "toolName": "redrive_dead_letter_queue",
+  "version": "1.0.0",
+  "action": "Invoke",
+  "reasons": [{ "code": "MissingScopes", "message": "Missing required scope(s): queue.redrive." }]
+}
+```
+
+Omit `version` to target the latest active version. This decision endpoint is the gate that tool execution will call through in later phases.
 
 Tests (integration tests spin up Postgres via Testcontainers — Docker required):
 
