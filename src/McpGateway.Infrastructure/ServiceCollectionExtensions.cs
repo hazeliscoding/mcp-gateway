@@ -1,3 +1,4 @@
+using McpGateway.Application.Approvals;
 using McpGateway.Application.Authorization;
 using McpGateway.Application.Identities;
 using McpGateway.Application.Tools;
@@ -24,6 +25,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IToolRegistryRepository, ToolRegistryRepository>();
         services.AddScoped<ToolRegistryService>();
         services.AddScoped<AuthorizationService>();
+
+        services.AddScoped<IApprovalRepository, ApprovalRepository>();
+        services.AddScoped<ApprovalService>();
 
         services.AddScoped<IIdentityRepository, IdentityRepository>();
         services.AddSingleton<ISecretHasher, Pbkdf2SecretHasher>();

@@ -1,3 +1,4 @@
+using McpGateway.Domain.Approvals;
 using McpGateway.Domain.Identities;
 using McpGateway.Domain.Tools;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,8 @@ public sealed class McpGatewayDbContext(DbContextOptions<McpGatewayDbContext> op
     public DbSet<ToolDefinition> Tools => Set<ToolDefinition>();
 
     public DbSet<GatewayIdentity> Identities => Set<GatewayIdentity>();
+
+    public DbSet<ApprovalRequest> Approvals => Set<ApprovalRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(McpGatewayDbContext).Assembly);
