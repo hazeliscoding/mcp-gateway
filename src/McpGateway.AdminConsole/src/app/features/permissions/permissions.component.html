@@ -1,0 +1,33 @@
+<app-page-header title="Permissions" description="Which identities hold each scope. Scopes are granted at registration and enforced by the gateway." />
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<mat-accordion>
+  @for (grant of grants(); track grant.scope) {
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <code>{{ grant.scope }}</code>
+          @if (grant.admin) {
+            <mat-icon class="admin" matTooltip="Grants operator access to management endpoints">shield</mat-icon>
+          }
+        </mat-panel-title>
+        <mat-panel-description>{{ grant.holders.length }} identities</mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <mat-chip-set>
+        @for (holder of grant.holders; track holder.clientId) {
+          <mat-chip [class.disabled]="!holder.enabled">
+            {{ holder.clientId }} <span class="type">({{ holder.type }})</span>
+          </mat-chip>
+        }
+      </mat-chip-set>
+    </mat-expansion-panel>
+  }
+</mat-accordion>
+
+@if (!loading() && grants().length === 0) {
+  <p class="empty">No scopes have been granted yet.</p>
+}

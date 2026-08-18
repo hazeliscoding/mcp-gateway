@@ -29,6 +29,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/identities/identity-list.component').then((m) => m.IdentityListComponent),
       },
+      {
+        path: 'permissions',
+        loadComponent: () =>
+          import('./features/permissions/permissions.component').then((m) => m.PermissionsComponent),
+      },
+      {
+        path: 'approvals',
+        loadComponent: () =>
+          import('./features/approvals/approval-list.component').then((m) => m.ApprovalListComponent),
+      },
+      {
+        path: 'audit',
+        loadComponent: () => import('./features/audit/audit-list.component').then((m) => m.AuditListComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

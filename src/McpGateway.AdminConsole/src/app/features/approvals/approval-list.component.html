@@ -1,0 +1,56 @@
+<app-page-header title="Approvals" description="Review approval requests for risk-gated tools. Approving requires a different operator than the requester.">
+  <button mat-button (click)="load()"><mat-icon>refresh</mat-icon> Refresh</button>
+</app-page-header>
+
+<mat-tab-group (selectedIndexChange)="onTabChange($event)">
+  @for (status of statuses; track status) {
+    <mat-tab [label]="status"></mat-tab>
+  }
+</mat-tab-group>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="cards">
+  @for (approval of approvals(); track approval.id) {
+    <mat-card class="approval">
+      <mat-card-header>
+        <mat-card-title>
+          {{ approval.toolName }} <span class="muted">{{ approval.version }}</span>
+          <app-risk-badge [risk]="approval.riskLevel" />
+        </mat-card-title>
+        <mat-card-subtitle>
+          Requested by {{ approval.requesterClientId }} · {{ approval.requestedAt | date: 'short' }}
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <dl class="meta">
+          <div><dt>Action</dt><dd>{{ approval.action }}</dd></div>
+          <div><dt>Environment</dt><dd>{{ approval.environment }}</dd></div>
+          @if (approval.resource) {
+            <div><dt>Resource</dt><dd>{{ approval.resource }}</dd></div>
+          }
+          <div><dt>Status</dt><dd>{{ approval.status | enumLabel }}</dd></div>
+        </dl>
+        @if (approval.decidedBy) {
+          <p class="decided">
+            {{ approval.status | enumLabel }} by {{ approval.decidedBy }}
+            @if (approval.decidedAt) { · {{ approval.decidedAt | date: 'short' }} }
+            @if (approval.decisionNote) { — “{{ approval.decisionNote }}” }
+          </p>
+        }
+      </mat-card-content>
+      @if (approval.status === 'Pending' && isAdmin()) {
+        <mat-card-actions align="end">
+          <button mat-button color="warn" (click)="decide(approval, 'reject')">Reject</button>
+          <button mat-flat-button color="primary" (click)="decide(approval, 'approve')">Approve</button>
+        </mat-card-actions>
+      }
+    </mat-card>
+  }
+</div>
+
+@if (!loading() && approvals().length === 0) {
+  <p class="empty">No approval requests in this state.</p>
+}

@@ -1,0 +1,61 @@
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.filters .narrow {
+  width: 90px;
+}
+
+.audit-table {
+  width: 100%;
+}
+
+.muted {
+  opacity: 0.6;
+  font-size: 0.8rem;
+}
+
+.result {
+  font-weight: 600;
+}
+
+.result[data-result='Denied'],
+.result[data-result='Prohibited'],
+.result[data-result='Rejected'] {
+  color: var(--mat-sys-error);
+}
+
+.result[data-result='Permitted'],
+.result[data-result='Approved'] {
+  color: #2e7d32;
+}
+
+.result[data-result='RequiresApproval'],
+.result[data-result='Requested'] {
+  color: #ef6c00;
+}
+
+.trace {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.trace code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  opacity: 0.7;
+}

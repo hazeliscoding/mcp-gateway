@@ -1,0 +1,103 @@
+<app-page-header title="Audit history" description="Every authorization decision and approval event, newest first." />
+
+<div class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>Tool name</mat-label>
+    <input matInput [(ngModel)]="toolName" (keyup.enter)="search()" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Actor</mat-label>
+    <input matInput [(ngModel)]="actor" (keyup.enter)="search()" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Event type</mat-label>
+    <mat-select [(ngModel)]="eventType">
+      <mat-option [value]="''">All</mat-option>
+      @for (type of eventTypes; track type) {
+        <mat-option [value]="type">{{ type | enumLabel }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>From</mat-label>
+    <input matInput [matDatepicker]="fromPicker" [(ngModel)]="from" />
+    <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+    <mat-datepicker #fromPicker />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>To</mat-label>
+    <input matInput [matDatepicker]="toPicker" [(ngModel)]="to" />
+    <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+    <mat-datepicker #toPicker />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="narrow">
+    <mat-label>Limit</mat-label>
+    <input matInput type="number" [(ngModel)]="limit" min="1" max="500" />
+  </mat-form-field>
+
+  <button mat-flat-button color="primary" (click)="search()"><mat-icon>search</mat-icon> Search</button>
+  <button mat-button (click)="reset()">Reset</button>
+</div>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<table mat-table [dataSource]="entries()" class="audit-table">
+  <ng-container matColumnDef="occurredAt">
+    <th mat-header-cell *matHeaderCellDef>When</th>
+    <td mat-cell *matCellDef="let e">{{ e.occurredAt | date: 'short' }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="eventType">
+    <th mat-header-cell *matHeaderCellDef>Event</th>
+    <td mat-cell *matCellDef="let e">{{ e.eventType | enumLabel }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="actor">
+    <th mat-header-cell *matHeaderCellDef>Actor</th>
+    <td mat-cell *matCellDef="let e">{{ e.actorClientId }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="result">
+    <th mat-header-cell *matHeaderCellDef>Result</th>
+    <td mat-cell *matCellDef="let e">
+      <span class="result" [attr.data-result]="e.result">{{ e.result }}</span>
+      @if (e.detail) {
+        <div class="muted">{{ e.detail }}</div>
+      }
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="tool">
+    <th mat-header-cell *matHeaderCellDef>Tool</th>
+    <td mat-cell *matCellDef="let e">
+      @if (e.toolName) {
+        {{ e.toolName }} <span class="muted">{{ e.version }}</span>
+      } @else {
+        <span class="muted">—</span>
+      }
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="trace">
+    <th mat-header-cell *matHeaderCellDef>Trace</th>
+    <td mat-cell *matCellDef="let e">
+      <button class="trace" (click)="copyTrace(e.traceId)" matTooltip="Copy trace id">
+        <code>{{ e.traceId }}</code>
+      </button>
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="columns"></tr>
+  <tr mat-row *matRowDef="let row; columns: columns"></tr>
+</table>
+
+@if (!loading() && entries().length === 0) {
+  <p class="empty">No audit entries match the current filters.</p>
+}

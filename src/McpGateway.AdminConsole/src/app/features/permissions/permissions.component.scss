@@ -1,0 +1,32 @@
+mat-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+mat-panel-title code {
+  font-family: 'Roboto Mono', monospace;
+}
+
+.admin {
+  color: var(--mat-sys-tertiary);
+  font-size: 1.1rem;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.type {
+  opacity: 0.6;
+  font-size: 0.8rem;
+}
+
+mat-chip.disabled {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  opacity: 0.7;
+}
