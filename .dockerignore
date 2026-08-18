@@ -3,6 +3,11 @@
 **/bin/
 **/obj/
 **/TestResults/
+# The admin console builds from its own context; keep its Node artifacts
+# out of the API image build context.
+**/node_modules/
+**/dist/
+**/.angular/
 .git/
 docs/
 README.md

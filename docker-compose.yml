@@ -28,5 +28,12 @@ services:
     ports:
       - "8080:8080"
 
+  console:
+    build: ./src/McpGateway.AdminConsole
+    depends_on:
+      - api
+    ports:
+      - "4200:80"
+
 volumes:
   pgdata:
