@@ -1,0 +1,58 @@
+.shell {
+  height: 100vh;
+}
+
+.shell-nav {
+  width: 240px;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.active-link {
+  background: var(--mat-sys-secondary-container);
+}
+
+.shell-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  gap: 1rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.session,
+.badge-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.session.expiring {
+  color: var(--mat-sys-error);
+}
+
+.badge-warn {
+  color: var(--mat-sys-tertiary);
+}
+
+.client-id {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.page {
+  padding: 1.5rem;
+}
