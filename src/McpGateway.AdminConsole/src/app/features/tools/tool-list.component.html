@@ -1,0 +1,80 @@
+<app-page-header title="Tool registry" description="Register tools, publish versions, and use the enable toggle as a kill switch.">
+  @if (isAdmin()) {
+    <button mat-flat-button color="primary" (click)="registerTool()">
+      <mat-icon>add</mat-icon> Register tool
+    </button>
+  }
+</app-page-header>
+
+<div class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>Name contains</mat-label>
+    <input matInput [(ngModel)]="nameContains" (keyup.enter)="refresh()" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Risk level</mat-label>
+    <mat-select [(ngModel)]="riskFilter" (selectionChange)="refresh()">
+      <mat-option [value]="''">All</mat-option>
+      @for (level of riskLevels; track level) {
+        <mat-option [value]="level">{{ level }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-slide-toggle [(ngModel)]="includeDisabled" (change)="refresh()">Show disabled</mat-slide-toggle>
+  <button mat-button (click)="refresh()"><mat-icon>refresh</mat-icon> Refresh</button>
+</div>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<table mat-table [dataSource]="tools()" class="tools-table">
+  <ng-container matColumnDef="name">
+    <th mat-header-cell *matHeaderCellDef>Name</th>
+    <td mat-cell *matCellDef="let tool">
+      <button class="link" (click)="open(tool)">{{ tool.name }}</button>
+      <div class="muted">{{ tool.description }}</div>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="risk">
+    <th mat-header-cell *matHeaderCellDef>Risk</th>
+    <td mat-cell *matCellDef="let tool"><app-risk-badge [risk]="tool.riskLevel" /></td>
+  </ng-container>
+
+  <ng-container matColumnDef="version">
+    <th mat-header-cell *matHeaderCellDef>Latest</th>
+    <td mat-cell *matCellDef="let tool">{{ tool.latestVersion }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="approval">
+    <th mat-header-cell *matHeaderCellDef>Approval</th>
+    <td mat-cell *matCellDef="let tool">
+      @if (tool.approvalRequired) {
+        <mat-icon class="yes" matTooltip="Approval required">verified_user</mat-icon>
+      } @else {
+        <span class="muted">—</span>
+      }
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="enabled">
+    <th mat-header-cell *matHeaderCellDef>Enabled</th>
+    <td mat-cell *matCellDef="let tool">
+      <mat-slide-toggle
+        [checked]="tool.enabled"
+        [disabled]="!isAdmin()"
+        (change)="toggleEnabled(tool, $event.checked)"
+      />
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="columns"></tr>
+  <tr mat-row *matRowDef="let row; columns: columns"></tr>
+</table>
+
+@if (!loading() && tools().length === 0) {
+  <p class="empty">No tools match the current filters.</p>
+}

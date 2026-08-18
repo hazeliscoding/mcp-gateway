@@ -16,6 +16,19 @@ export const routes: Routes = [
         path: 'home',
         loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
       },
+      {
+        path: 'tools',
+        loadComponent: () => import('./features/tools/tool-list.component').then((m) => m.ToolListComponent),
+      },
+      {
+        path: 'tools/:name',
+        loadComponent: () => import('./features/tools/tool-detail.component').then((m) => m.ToolDetailComponent),
+      },
+      {
+        path: 'identities',
+        loadComponent: () =>
+          import('./features/identities/identity-list.component').then((m) => m.IdentityListComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

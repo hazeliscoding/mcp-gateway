@@ -1,0 +1,29 @@
+.tool-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1rem;
+  min-width: 520px;
+  max-width: 100%;
+}
+
+.tool-form .full {
+  grid-column: 1 / -1;
+}
+
+.tool-form mat-checkbox {
+  grid-column: 1 / -1;
+  margin: 0.25rem 0;
+}
+
+.form-error {
+  grid-column: 1 / -1;
+  color: var(--mat-sys-error);
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .tool-form {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
+}

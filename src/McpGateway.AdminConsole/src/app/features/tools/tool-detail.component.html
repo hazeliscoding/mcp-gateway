@@ -1,0 +1,67 @@
+<a mat-button routerLink="/tools"><mat-icon>arrow_back</mat-icon> Back to tools</a>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (tool(); as t) {
+  <app-page-header [title]="t.name" [description]="t.enabled ? 'Enabled' : 'Disabled (kill switch active)'">
+    @if (isAdmin()) {
+      <button mat-flat-button color="primary" (click)="addVersion()">
+        <mat-icon>add</mat-icon> Add version
+      </button>
+    }
+  </app-page-header>
+
+  @for (version of t.versions; track version.version) {
+    <mat-card class="version">
+      <mat-card-header>
+        <mat-card-title>
+          Version {{ version.version }}
+          <app-risk-badge [risk]="version.riskLevel" />
+          <span class="status" [class.deprecated]="version.status === 'Deprecated'">
+            {{ version.status | enumLabel }}
+          </span>
+        </mat-card-title>
+        <span class="spacer"></span>
+        @if (isAdmin() && version.status === 'Active') {
+          <button mat-button color="warn" (click)="deprecate(version)">Deprecate</button>
+        }
+      </mat-card-header>
+      <mat-card-content>
+        <p>{{ version.description }}</p>
+        <dl class="meta">
+          <div><dt>Approval required</dt><dd>{{ version.approvalRequired ? 'Yes' : 'No' }}</dd></div>
+          <div><dt>Timeout</dt><dd>{{ version.timeoutSeconds }}s</dd></div>
+          <div>
+            <dt>Required scopes</dt>
+            <dd>
+              @if (version.requiredScopes.length) {
+                <mat-chip-set>
+                  @for (scope of version.requiredScopes; track scope) {
+                    <mat-chip>{{ scope }}</mat-chip>
+                  }
+                </mat-chip-set>
+              } @else {
+                <span class="muted">None</span>
+              }
+            </dd>
+          </div>
+        </dl>
+        <details>
+          <summary>Schemas</summary>
+          <div class="schemas">
+            <div>
+              <h4>Input</h4>
+              <pre>{{ schemaText(version.inputSchema) }}</pre>
+            </div>
+            <div>
+              <h4>Output</h4>
+              <pre>{{ schemaText(version.outputSchema) }}</pre>
+            </div>
+          </div>
+        </details>
+      </mat-card-content>
+    </mat-card>
+  }
+}

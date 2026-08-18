@@ -1,0 +1,64 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+<mat-dialog-content>
+  <form class="tool-form" (ngSubmit)="submit()">
+    @if (data.mode === 'tool') {
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input matInput name="name" [(ngModel)]="name" required />
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Version</mat-label>
+      <input matInput name="version" [(ngModel)]="version" placeholder="1.0" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Description</mat-label>
+      <input matInput name="description" [(ngModel)]="description" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Risk level</mat-label>
+      <mat-select name="riskLevel" [(ngModel)]="riskLevel">
+        @for (level of riskLevels; track level) {
+          <mat-option [value]="level">{{ level }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Timeout (seconds)</mat-label>
+      <input matInput type="number" name="timeoutSeconds" [(ngModel)]="timeoutSeconds" min="1" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Required scopes (space or comma separated)</mat-label>
+      <input matInput name="scopes" [(ngModel)]="scopes" placeholder="queue.read queue.redrive" />
+    </mat-form-field>
+
+    <mat-checkbox name="approvalRequired" [(ngModel)]="approvalRequired">
+      Require approval before invocation
+    </mat-checkbox>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Input schema (JSON)</mat-label>
+      <textarea matInput name="inputSchema" [(ngModel)]="inputSchema" rows="4"></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Output schema (JSON)</mat-label>
+      <textarea matInput name="outputSchema" [(ngModel)]="outputSchema" rows="4"></textarea>
+    </mat-form-field>
+
+    @if (schemaError()) {
+      <p class="form-error">{{ schemaError() }}</p>
+    }
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="undefined">Cancel</button>
+  <button mat-flat-button color="primary" (click)="submit()" [disabled]="!name || !version || !description">
+    Save
+  </button>
+</mat-dialog-actions>

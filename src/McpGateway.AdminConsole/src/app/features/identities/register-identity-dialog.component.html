@@ -1,0 +1,34 @@
+<h2 mat-dialog-title>Register identity</h2>
+<mat-dialog-content>
+  <form class="identity-form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline">
+      <mat-label>Client ID</mat-label>
+      <input matInput name="clientId" [(ngModel)]="clientId" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Type</mat-label>
+      <mat-select name="type" [(ngModel)]="type">
+        @for (t of identityTypes; track t) {
+          <mat-option [value]="t">{{ t }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Display name</mat-label>
+      <input matInput name="displayName" [(ngModel)]="displayName" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Granted scopes (space or comma separated)</mat-label>
+      <input matInput name="scopes" [(ngModel)]="scopes" placeholder="queue.read gateway.admin" />
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="undefined">Cancel</button>
+  <button mat-flat-button color="primary" (click)="submit()" [disabled]="!clientId || !displayName">
+    Register
+  </button>
+</mat-dialog-actions>
