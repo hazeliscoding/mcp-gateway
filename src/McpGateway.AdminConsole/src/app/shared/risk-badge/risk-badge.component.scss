@@ -1,0 +1,26 @@
+.risk-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.risk-badge[data-risk='ReadOnly'] {
+  background: #2e7d32;
+}
+
+.risk-badge[data-risk='Write'] {
+  background: #1565c0;
+}
+
+.risk-badge[data-risk='Privileged'] {
+  background: #ef6c00;
+}
+
+.risk-badge[data-risk='Destructive'] {
+  background: #c62828;
+}
