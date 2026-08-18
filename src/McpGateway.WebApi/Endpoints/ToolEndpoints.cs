@@ -15,17 +15,19 @@ public static class ToolEndpoints
     {
         var tools = app.MapGroup("/api/tools").RequireAuthorization();
 
+        // Registry mutations are operator-only; discovery below stays open to any
+        // authenticated caller because agents list and inspect tools themselves.
         tools.MapPost("/", async (RegisterToolRequest request, ToolRegistryService service, CancellationToken cancellationToken) =>
         {
             var result = await service.RegisterToolAsync(request, cancellationToken);
             return result.ToHttp(detail => Results.Created($"/api/tools/{detail.Name}", detail));
-        });
+        }).RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         tools.MapPost("/{name}/versions", async (string name, RegisterVersionRequest request, ToolRegistryService service, CancellationToken cancellationToken) =>
         {
             var result = await service.RegisterVersionAsync(name, request, cancellationToken);
             return result.ToHttp(detail => Results.Created($"/api/tools/{detail.Name}", detail));
-        });
+        }).RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         tools.MapGet("/", async (ToolRegistryService service, CancellationToken cancellationToken, RiskLevel? riskLevel = null, bool includeDisabled = false, string? nameContains = null) =>
         {
@@ -41,13 +43,16 @@ public static class ToolEndpoints
         });
 
         tools.MapPost("/{name}/enable", async (string name, ToolRegistryService service, CancellationToken cancellationToken) =>
-            (await service.SetEnabledAsync(name, enabled: true, cancellationToken)).ToHttp(_ => Results.NoContent()));
+            (await service.SetEnabledAsync(name, enabled: true, cancellationToken)).ToHttp(_ => Results.NoContent()))
+            .RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         tools.MapPost("/{name}/disable", async (string name, ToolRegistryService service, CancellationToken cancellationToken) =>
-            (await service.SetEnabledAsync(name, enabled: false, cancellationToken)).ToHttp(_ => Results.NoContent()));
+            (await service.SetEnabledAsync(name, enabled: false, cancellationToken)).ToHttp(_ => Results.NoContent()))
+            .RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         tools.MapPost("/{name}/versions/{version}/deprecate", async (string name, string version, ToolRegistryService service, CancellationToken cancellationToken) =>
-            (await service.DeprecateVersionAsync(name, version, cancellationToken)).ToHttp(_ => Results.NoContent()));
+            (await service.DeprecateVersionAsync(name, version, cancellationToken)).ToHttp(_ => Results.NoContent()))
+            .RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         return app;
     }

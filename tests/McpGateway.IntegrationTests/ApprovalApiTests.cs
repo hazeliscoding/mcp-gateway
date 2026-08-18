@@ -64,16 +64,19 @@ public sealed class ApprovalApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Agent_cannot_approve_its_own_request()
+    public async Task Requester_cannot_approve_its_own_request()
     {
+        // Agents are blocked from deciding by the admin-scope policy (see
+        // AdminScopePolicyTests); four-eyes must still hold for admins, so the
+        // admin opens a request and then fails to approve it themselves.
         const string tool = "appr_selfapprove_tool";
         await RegisterTool(tool, "Privileged", ["queue.redrive"]);
-        using var agent = await AgentClient("appr_selfapprove_agent", ["queue.redrive"]);
 
-        var created = await agent.PostAsJsonAsync($"/api/tools/{tool}/approvals", new { });
+        var created = await _admin.PostAsJsonAsync($"/api/tools/{tool}/approvals", new { });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var approval = (await created.Content.ReadFromJsonAsync<ApprovalResponse>(Json))!;
 
-        var selfApprove = await agent.PostAsJsonAsync($"/api/approvals/{approval.Id}/approve", new { });
+        var selfApprove = await _admin.PostAsJsonAsync($"/api/approvals/{approval.Id}/approve", new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, selfApprove.StatusCode);
     }

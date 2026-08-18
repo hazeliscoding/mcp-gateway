@@ -4,13 +4,14 @@ namespace McpGateway.WebApi.Endpoints;
 
 /// <summary>
 /// Identity administration. Registration and rotation responses are the only
-/// places a client secret ever appears; reads return metadata only.
+/// places a client secret ever appears; reads return metadata only. The whole
+/// group is operator-only — agents never need to enumerate identities.
 /// </summary>
 public static class IdentityEndpoints
 {
     public static IEndpointRouteBuilder MapIdentityEndpoints(this IEndpointRouteBuilder app)
     {
-        var identities = app.MapGroup("/api/identities").RequireAuthorization();
+        var identities = app.MapGroup("/api/identities").RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         identities.MapPost("/", async (RegisterIdentityRequest request, IdentityService service, CancellationToken cancellationToken) =>
         {

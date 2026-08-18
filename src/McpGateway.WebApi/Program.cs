@@ -5,6 +5,7 @@ using McpGateway.Domain.Identities;
 using McpGateway.Infrastructure;
 using McpGateway.Infrastructure.Persistence;
 using McpGateway.Infrastructure.Security;
+using McpGateway.WebApi;
 using McpGateway.WebApi.Endpoints;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authOptions.SigningKey)),
         ClockSkew = TimeSpan.FromSeconds(30),
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options => options.AddGatewayPolicies());
 
 var app = builder.Build();
 
@@ -57,7 +58,7 @@ using (var scope = app.Services.CreateScope())
         var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
         dbContext.Identities.Add(GatewayIdentity.Register(
             ClientId.Create(bootstrapClientId), IdentityType.Service, "Bootstrap Administrator",
-            hasher.Hash(bootstrapSecret), ["gateway.admin"], timeProvider.GetUtcNow()));
+            hasher.Hash(bootstrapSecret), [AuthorizationPolicies.GatewayAdminScope], timeProvider.GetUtcNow()));
         dbContext.SaveChanges();
         app.Logger.LogWarning(
             "Seeded bootstrap admin identity {ClientId}; rotate its secret before any non-local use", bootstrapClientId);

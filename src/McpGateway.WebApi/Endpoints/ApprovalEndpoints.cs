@@ -39,11 +39,15 @@ public static class ApprovalEndpoints
         approvals.MapGet("/{id:guid}", async (Guid id, ApprovalService service, CancellationToken cancellationToken) =>
             (await service.GetAsync(id, cancellationToken)).ToHttp(Results.Ok));
 
+        // Deciding is operator-only; requesting and reading stay open because agents
+        // open approval requests and poll their status themselves.
         approvals.MapPost("/{id:guid}/approve", (Guid id, DecisionRequest? body, ClaimsPrincipal user, ApprovalService service, CancellationToken cancellationToken) =>
-            DecideAsync(id, body, user, service, approve: true, cancellationToken));
+            DecideAsync(id, body, user, service, approve: true, cancellationToken))
+            .RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         approvals.MapPost("/{id:guid}/reject", (Guid id, DecisionRequest? body, ClaimsPrincipal user, ApprovalService service, CancellationToken cancellationToken) =>
-            DecideAsync(id, body, user, service, approve: false, cancellationToken));
+            DecideAsync(id, body, user, service, approve: false, cancellationToken))
+            .RequireAuthorization(AuthorizationPolicies.AdminScope);
 
         return app;
     }
