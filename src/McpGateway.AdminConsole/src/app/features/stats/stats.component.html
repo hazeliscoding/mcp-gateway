@@ -1,0 +1,68 @@
+<app-page-header title="Usage statistics" description="Audit activity aggregated over the selected window (defaults to the last 7 days).">
+  <mat-form-field appearance="outline" class="date">
+    <mat-label>From</mat-label>
+    <input matInput [matDatepicker]="fromPicker" [(ngModel)]="from" />
+    <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+    <mat-datepicker #fromPicker />
+  </mat-form-field>
+  <mat-form-field appearance="outline" class="date">
+    <mat-label>To</mat-label>
+    <input matInput [matDatepicker]="toPicker" [(ngModel)]="to" />
+    <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+    <mat-datepicker #toPicker />
+  </mat-form-field>
+  <button mat-flat-button color="primary" (click)="load()"><mat-icon>refresh</mat-icon> Apply</button>
+</app-page-header>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (stats(); as s) {
+  <div class="grid">
+    <mat-card class="tile total">
+      <div class="value">{{ s.totalEvents | number }}</div>
+      <div class="label">Total events</div>
+    </mat-card>
+
+    <mat-card class="chart">
+      <h3>Events per day</h3>
+      <div class="canvas">
+        <canvas baseChart type="line" [data]="perDayData()" [options]="lineOptions"></canvas>
+      </div>
+    </mat-card>
+
+    <mat-card class="chart">
+      <h3>Authorization outcomes</h3>
+      <div class="canvas">
+        <canvas baseChart type="doughnut" [data]="outcomeData()" [options]="doughnutOptions"></canvas>
+      </div>
+    </mat-card>
+
+    <mat-card class="chart">
+      <h3>Events by tool (top 10)</h3>
+      <div class="canvas">
+        <canvas baseChart type="bar" [data]="toolData()" [options]="barOptions"></canvas>
+      </div>
+    </mat-card>
+
+    <mat-card class="chart">
+      <h3>Most active clients</h3>
+      <table mat-table [dataSource]="s.eventsByActor" class="actor-table">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Client</th>
+          <td mat-cell *matCellDef="let a">{{ a.name }}</td>
+        </ng-container>
+        <ng-container matColumnDef="count">
+          <th mat-header-cell *matHeaderCellDef>Events</th>
+          <td mat-cell *matCellDef="let a">{{ a.count | number }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="['name', 'count']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['name', 'count']"></tr>
+      </table>
+      @if (s.eventsByActor.length === 0) {
+        <p class="empty">No activity in this window.</p>
+      }
+    </mat-card>
+  </div>
+}
