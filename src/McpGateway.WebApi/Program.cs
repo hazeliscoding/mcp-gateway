@@ -15,6 +15,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMcpGatewayInfrastructure(builder.Configuration);
 builder.Services.AddProblemDetails();
+builder.Services.AddOpenApi();
+
+const string BrowserCorsPolicy = "BrowserConsole";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:4200"];
+builder.Services.AddCors(options => options.AddPolicy(BrowserCorsPolicy, policy => policy
+    .WithOrigins(allowedOrigins)
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -37,6 +46,9 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler();
 }
 
+app.MapOpenApi();
+
+app.UseCors(BrowserCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 
