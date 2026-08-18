@@ -138,6 +138,14 @@ Pages:
 - Kill switches.
 - Usage statistics.
 
+**Implementation notes (delivered):**
+
+- Angular 20 + Angular Material, standalone/signals, under `src/McpGateway.AdminConsole/`. See ADR 0009.
+- **Kill switches** are the inline enable/disable toggles on the tools and identities pages, not a separate page.
+- **Usage statistics** are backed by a new server-side aggregation endpoint, `GET /api/audit/stats` (there was no metrics endpoint before). Charts use chart.js via ng2-charts.
+- Management endpoints are now gated by the `gateway.admin` scope (ADR 0008); discovery/authorize/approval-request stay open for agents. CORS and an OpenAPI document were added to support the browser app.
+- Screenshots for the README are added once the running UI is captured.
+
 ## Phase 7 — Attack Testing
 
 Test:

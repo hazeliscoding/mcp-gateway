@@ -28,7 +28,7 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 - [x] Phase 4 — Risk classification (risk drives the outcome: automatic, requires approval, or prohibited)
 - [x] Approval engine — request/approve/reject workflow with four-eyes that makes `RequiresApproval` actionable
 - [x] Phase 5 — Audit trail (append-only record of every authorization and approval event, with hashed inputs and trace ids)
-- [ ] Phase 6 — Angular admin console
+- [x] Phase 6 — Angular admin console (registry, identities, permissions, approvals, audit, kill switches, usage statistics)
 - [ ] Phase 7 — Attack testing
 
 ## Running Locally
@@ -37,7 +37,7 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 docker compose up --build
 ```
 
-The API starts on `http://localhost:8080`, applies migrations automatically, and seeds a bootstrap admin identity (`gateway_admin` / `local-dev-bootstrap-secret` — local dev only). All APIs require a token. Get one, then register and discover a tool:
+The API starts on `http://localhost:8080` and the admin console on `http://localhost:4200`. The API applies migrations automatically and seeds a bootstrap admin identity (`gateway_admin` / `local-dev-bootstrap-secret` — local dev only), which holds the `gateway.admin` scope. Management endpoints (identity administration, registry mutations, approval decisions) require that scope; discovery, authorization decisions, and approval requests are open to any authenticated caller so agents can use them. All APIs require a token. Get one, then register and discover a tool:
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/oauth/token \
@@ -144,10 +144,25 @@ curl -H "Authorization: Bearer $TOKEN" \
 ]
 ```
 
-Filter by `toolName`, `actor`, `eventType`, and a `from`/`to` time window; results come back newest-first.
+Filter by `toolName`, `actor`, `eventType`, and a `from`/`to` time window; results come back newest-first. `GET /api/audit/stats?from=&to=` returns the same activity aggregated server-side (counts by event type, tool, authorization outcome, actor, and per day) over a window that defaults to the last seven days — this backs the console's statistics dashboard.
+
+### Admin console
+
+The Angular admin console at `http://localhost:4200` is a browser front-end over the same API. Sign in with a client id and secret (the console exchanges them for a token at `/oauth/token`; the token is held in memory only and the secret is never stored). For local dev, sign in as `gateway_admin` / `local-dev-bootstrap-secret`.
+
+It covers the full Phase 6 surface: tool registry with inline enable/disable **kill switches**, agent identities (register, rotate secret, disable), a permissions view of who holds each scope, pending approvals with approve/reject, audit history, and a usage-statistics dashboard. Operator-only actions are hidden when the signed-in identity lacks `gateway.admin`.
+
+Develop the console against a running API with the dev proxy:
+
+```bash
+cd src/McpGateway.AdminConsole
+npm install
+npm start   # ng serve on http://localhost:4200, proxying /api and /oauth to :8080
+```
 
 Tests (integration tests spin up Postgres via Testcontainers — Docker required):
 
 ```bash
-dotnet test
+dotnet test                                   # backend
+cd src/McpGateway.AdminConsole && npm test    # console (Karma/Jasmine)
 ```
