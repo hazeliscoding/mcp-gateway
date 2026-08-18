@@ -70,6 +70,38 @@ public class AuditServiceTests
         Assert.Equal(2, capped.Value!.Count);
     }
 
+    [Fact]
+    public async Task Stats_default_window_is_the_seven_days_ending_now()
+    {
+        // Just inside the window (six days back) versus just outside (eight days back).
+        await SeedAt(Now.AddDays(-6), "get_queue_metrics");
+        await SeedAt(Now.AddDays(-8), "old_tool");
+
+        var stats = await _service.GetStatsAsync(new AuditStatsFilter(), CancellationToken.None);
+
+        Assert.Equal(Now, stats.Value!.To);
+        Assert.Equal(Now.AddDays(-7), stats.Value.From);
+        Assert.Equal(1, stats.Value.TotalEvents);
+        Assert.Equal("get_queue_metrics", Assert.Single(stats.Value.EventsByTool).Name);
+    }
+
+    [Fact]
+    public async Task Stats_reject_an_inverted_window()
+    {
+        var result = await _service.GetStatsAsync(
+            new AuditStatsFilter(From: Now, To: Now.AddDays(-1)), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    private Task SeedAt(DateTimeOffset occurredAt, string tool) =>
+        _repository.AddAsync(
+            AuditEntry.Create(
+                Guid.NewGuid(), occurredAt, "trace-abc", AuditEventType.AuthorizationDecision,
+                ClientId.Create("incident_agent"), IdentityType.Agent, "Permitted",
+                ToolName.Create(tool), ToolVersionNumber.Create("1.0"), detail: null, requestHash: "h:0"),
+            CancellationToken.None);
+
     private Task Seed(AuditEventType eventType, string tool) =>
         eventType == AuditEventType.AuthorizationDecision
             ? _service.RecordAuthorizationAsync(

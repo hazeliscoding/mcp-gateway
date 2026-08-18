@@ -11,4 +11,7 @@ public interface IAuditRepository
 
     /// <summary>Returns entries matching the filter, newest first, bounded by the filter's limit.</summary>
     Task<IReadOnlyList<AuditEntry>> QueryAsync(AuditQueryFilter filter, CancellationToken cancellationToken);
+
+    /// <summary>Aggregates audit activity over the inclusive <paramref name="from"/>..<paramref name="to"/> window.</summary>
+    Task<AuditStatsResponse> GetStatsAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 }

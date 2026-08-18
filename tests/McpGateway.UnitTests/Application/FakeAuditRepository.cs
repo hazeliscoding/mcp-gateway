@@ -31,4 +31,23 @@ internal sealed class FakeAuditRepository : IAuditRepository
             .ToList();
         return Task.FromResult(results);
     }
+
+    public Task<AuditStatsResponse> GetStatsAsync(
+        DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
+    {
+        var rows = _entries.Where(a => a.OccurredAt >= from && a.OccurredAt <= to).ToList();
+
+        var byType = rows.GroupBy(r => r.EventType.ToString())
+            .Select(g => new NamedCount(g.Key, g.Count())).OrderByDescending(c => c.Count).ThenBy(c => c.Name).ToList();
+        var byTool = rows.Where(r => r.ToolName is not null).GroupBy(r => r.ToolName!.Value)
+            .Select(g => new NamedCount(g.Key, g.Count())).OrderByDescending(c => c.Count).ThenBy(c => c.Name).Take(10).ToList();
+        var outcomes = rows.Where(r => r.EventType == AuditEventType.AuthorizationDecision).GroupBy(r => r.Result)
+            .Select(g => new NamedCount(g.Key, g.Count())).OrderByDescending(c => c.Count).ThenBy(c => c.Name).ToList();
+        var byActor = rows.GroupBy(r => r.ActorClientId.Value)
+            .Select(g => new NamedCount(g.Key, g.Count())).OrderByDescending(c => c.Count).ThenBy(c => c.Name).Take(10).ToList();
+        var perDay = rows.GroupBy(r => DateOnly.FromDateTime(r.OccurredAt.UtcDateTime))
+            .Select(g => new DailyCount(g.Key, g.Count())).OrderBy(c => c.Date).ToList();
+
+        return Task.FromResult(new AuditStatsResponse(from, to, rows.Count, byType, byTool, outcomes, byActor, perDay));
+    }
 }

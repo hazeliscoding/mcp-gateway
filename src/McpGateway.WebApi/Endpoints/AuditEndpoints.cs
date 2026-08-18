@@ -26,6 +26,16 @@ public static class AuditEndpoints
             return result.ToHttp(Results.Ok);
         }).RequireAuthorization();
 
+        app.MapGet("/api/audit/stats", async (
+            AuditService service,
+            CancellationToken cancellationToken,
+            DateTimeOffset? from = null,
+            DateTimeOffset? to = null) =>
+        {
+            var result = await service.GetStatsAsync(new AuditStatsFilter(from, to), cancellationToken);
+            return result.ToHttp(Results.Ok);
+        }).RequireAuthorization();
+
         return app;
     }
 }

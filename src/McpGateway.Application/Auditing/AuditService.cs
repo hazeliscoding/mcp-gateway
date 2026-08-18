@@ -18,6 +18,7 @@ public sealed class AuditService(
     TimeProvider timeProvider) : IAuditTrail
 {
     private const int MaxLimit = 500;
+    private static readonly TimeSpan DefaultStatsWindow = TimeSpan.FromDays(7);
 
     public Task RecordAuthorizationAsync(
         CallerPrincipal caller,
@@ -78,6 +79,20 @@ public sealed class AuditService(
         var entries = await repository.QueryAsync(bounded, cancellationToken);
         IReadOnlyList<AuditEntryResponse> responses = entries.Select(ToResponse).ToList();
         return OperationResult<IReadOnlyList<AuditEntryResponse>>.Success(responses);
+    }
+
+    public async Task<OperationResult<AuditStatsResponse>> GetStatsAsync(
+        AuditStatsFilter filter, CancellationToken cancellationToken)
+    {
+        var to = filter.To ?? timeProvider.GetUtcNow();
+        var from = filter.From ?? to - DefaultStatsWindow;
+        if (from > to)
+        {
+            return OperationResult<AuditStatsResponse>.Invalid("The stats window start must not be after its end.");
+        }
+
+        var stats = await repository.GetStatsAsync(from, to, cancellationToken);
+        return OperationResult<AuditStatsResponse>.Success(stats);
     }
 
     private async Task AppendAsync(AuditEntry entry, CancellationToken cancellationToken)
