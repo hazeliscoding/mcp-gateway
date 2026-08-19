@@ -31,6 +31,16 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 - [x] Phase 6 — Angular admin console (registry, identities, permissions, approvals, audit, kill switches, usage statistics)
 - [ ] Phase 7 — Attack testing
 
+## Admin console
+
+<p align="center">
+  <a href="docs/screenshots/tool-registry.png"><img src="docs/screenshots/tool-registry.png" width="32%" alt="Tool registry with risk badges and kill-switch toggles" /></a>
+  <a href="docs/screenshots/approvals.png"><img src="docs/screenshots/approvals.png" width="32%" alt="Pending approvals with approve/reject" /></a>
+  <a href="docs/screenshots/usage-statistics.png"><img src="docs/screenshots/usage-statistics.png" width="32%" alt="Usage statistics dashboard" /></a>
+</p>
+
+Tool registry · pending approvals · usage statistics. More screens in [docs/screenshots/](docs/screenshots/).
+
 ## Running Locally
 
 ```bash
