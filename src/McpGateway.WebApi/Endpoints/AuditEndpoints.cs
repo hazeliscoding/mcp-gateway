@@ -5,13 +5,17 @@ namespace McpGateway.WebApi.Endpoints;
 
 /// <summary>
 /// Read-only view of the audit trail. Every authorization decision and approval
-/// event is recorded here, filterable by tool, actor, type, and time window.
+/// event is recorded here, filterable by tool, actor, type, and time window. The
+/// trail spans every identity's activity, so reads are operator-only
+/// (<c>gateway.admin</c>) — an agent must not enumerate other callers' actions.
 /// </summary>
 public static class AuditEndpoints
 {
     public static IEndpointRouteBuilder MapAuditEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/audit", async (
+        var audit = app.MapGroup("/api/audit").RequireAuthorization(AuthorizationPolicies.AdminScope);
+
+        audit.MapGet("/", async (
             AuditService service,
             CancellationToken cancellationToken,
             string? toolName = null,
@@ -24,9 +28,9 @@ public static class AuditEndpoints
             var result = await service.ListAsync(
                 new AuditQueryFilter(toolName, actor, eventType, from, to, limit), cancellationToken);
             return result.ToHttp(Results.Ok);
-        }).RequireAuthorization();
+        });
 
-        app.MapGet("/api/audit/stats", async (
+        audit.MapGet("/stats", async (
             AuditService service,
             CancellationToken cancellationToken,
             DateTimeOffset? from = null,
@@ -34,7 +38,7 @@ public static class AuditEndpoints
         {
             var result = await service.GetStatsAsync(new AuditStatsFilter(from, to), cancellationToken);
             return result.ToHttp(Results.Ok);
-        }).RequireAuthorization();
+        });
 
         return app;
     }

@@ -65,6 +65,8 @@ public sealed class AdminScopePolicyTests : IAsyncLifetime
     [InlineData("POST", "/api/tools/some_tool/versions/1.0/deprecate")]
     [InlineData("POST", "/api/approvals/00000000-0000-0000-0000-000000000001/approve")]
     [InlineData("POST", "/api/approvals/00000000-0000-0000-0000-000000000001/reject")]
+    [InlineData("GET", "/api/audit")]
+    [InlineData("GET", "/api/audit/stats")]
     public async Task Admin_endpoints_are_forbidden_without_the_admin_scope(string method, string path)
     {
         using var request = new HttpRequestMessage(new HttpMethod(method), path);
@@ -100,13 +102,11 @@ public sealed class AdminScopePolicyTests : IAsyncLifetime
         var detail = await _agent.GetAsync($"/api/tools/{tool}");
         var authorize = await _agent.PostAsJsonAsync($"/api/tools/{tool}/authorize", new { });
         var approvals = await _agent.GetAsync("/api/approvals");
-        var audit = await _agent.GetAsync("/api/audit");
 
         Assert.Equal(HttpStatusCode.OK, discovery.StatusCode);
         Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
         Assert.Equal(HttpStatusCode.OK, authorize.StatusCode);
         Assert.Equal(HttpStatusCode.OK, approvals.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, audit.StatusCode);
     }
 
     [Fact]
