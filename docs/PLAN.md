@@ -159,6 +159,21 @@ Test:
 - Secret leakage.
 - Cross-tenant access.
 
+**Implementation notes (delivered):**
+
+- Each testable attack is an executable red-team scenario under
+  `tests/McpGateway.IntegrationTests/Security/`, run in the normal `dotnet test` suite.
+  See ADR 0010 and [THREAT-MODEL.md](THREAT-MODEL.md) for the attack → control → test map.
+- Hardening: **audit reads (`/api/audit`, `/api/audit/stats`) now require `gateway.admin`**,
+  resolving the open question from ADR 0008 (the trail spans all identities).
+- **Cross-tenant access** is reframed as cross-identity **grant isolation** — this
+  gateway is single-tenant, so the tested property is that one caller's approval never
+  permits another.
+- **Deferred (no surface yet):** prompt injection in tool results and oversized responses
+  target the tool-execution/proxy layer, which is not built. Documented as open items in
+  the threat model, to be enforced and tested with the execution phase — not silently
+  dropped.
+
 ## Portfolio Demo
 
 Demonstrate:

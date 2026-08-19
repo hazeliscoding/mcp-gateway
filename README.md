@@ -29,7 +29,7 @@ In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [
 - [x] Approval engine — request/approve/reject workflow with four-eyes that makes `RequiresApproval` actionable
 - [x] Phase 5 — Audit trail (append-only record of every authorization and approval event, with hashed inputs and trace ids)
 - [x] Phase 6 — Angular admin console (registry, identities, permissions, approvals, audit, kill switches, usage statistics)
-- [ ] Phase 7 — Attack testing
+- [x] Phase 7 — Attack testing (executable red-team scenarios for the threat model; audit reads hardened to operators)
 
 ## Admin console
 
@@ -170,9 +170,19 @@ npm install
 npm start   # ng serve on http://localhost:4200, proxying /api and /oauth to :8080
 ```
 
+### Security
+
+The controls above are backed by executable red-team scenarios in
+`tests/McpGateway.IntegrationTests/Security/` — privilege escalation, token forgery,
+version downgrade, tool spoofing, cross-identity grant isolation, parameter injection,
+and secret leakage — each asserting that a defense holds, so a regression fails the
+build. [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) maps every attack to its control and
+test, and is explicit about what is deferred until tool execution exists (prompt
+injection in tool results, oversized responses).
+
 Tests (integration tests spin up Postgres via Testcontainers — Docker required):
 
 ```bash
-dotnet test                                   # backend
+dotnet test                                   # backend, incl. Security/ attack suite
 cd src/McpGateway.AdminConsole && npm test    # console (Karma/Jasmine)
 ```
