@@ -18,9 +18,9 @@ Risk classes drive policy: `ReadOnly` runs automatically, `Privileged` requires 
 
 .NET 10 · ASP.NET Core · PostgreSQL · EF Core · Angular · OpenTelemetry · Docker Compose · xUnit + Testcontainers
 
-## Status 🚧
+## Status ✅
 
-In progress — see [docs/PLAN.md](docs/PLAN.md) for the phased build plan and [docs/adr/](docs/adr/) for decisions.
+All seven planned phases are complete — see [docs/PLAN.md](docs/PLAN.md) for the build plan and [docs/adr/](docs/adr/) for the decisions behind them.
 
 - [x] Phase 1 — Tool registry (registration, discovery, versioning, kill switch, deprecation)
 - [x] Phase 2 — Authentication (user/agent/service identities, OAuth2 client credentials, JWT bearer)
